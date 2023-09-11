@@ -1,0 +1,11 @@
+{
+  "ap_mac": "CA43960000F2",
+  "ap_pass": "11111111",
+  "sta_mac": "DA43960000F2",
+  "user_id": "",
+  "enc_key": "",
+  "ble_enc_key": "",
+  "hostname": "",
+  "dev_type": "switch",
+  "active_state": "low"
+}

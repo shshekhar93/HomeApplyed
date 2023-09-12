@@ -9,6 +9,7 @@ namespace HomeApplyed {
 
   char toHexDigit(uint8_t nibble);
   uint8_t toNumber(char hexDigit);
+  String md5(const char* str);
 }
 
 #endif

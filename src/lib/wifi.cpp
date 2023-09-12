@@ -3,6 +3,7 @@
 #include "config/config.h"
 #include "common/crypto.h"
 #include "common/constants.h"
+#include "common/mappers.h"
 #include "WiFiManager.h"
 
 #ifdef ESP8266
@@ -129,17 +130,24 @@ transform=\"scale(-1,1) translate(-500,0)\"/>\
   const char* hostname = hostnameParam.getValue();
 
   Config* _config = Config::getInstance();
-  if(userId[0] == '\0') {
+  if(userId[0] == 0) {
     userId = _config->getStrValue(USER_ID);
   }
-  if(password[0] == '\0') {
+  if(password[0] == 0) {
     password = _config->getStrValue(ENCRYPTION_KEY);
+  } else {
+    uint32_t passwordLen = strlen(password);
+    if(passwordLen < 32) {
+      String newPass = md5(password);
+      passwordParam.setValue(newPass.c_str(), newPass.length());
+      password = passwordParam.getValue();
+    }
   }
-  if(hostname[0] == '\0'){
+  if(hostname[0] == 0){
     hostname = _config->getStrValue(HOSTNAME);
   }
 
-  if(userId[0] == '\0' || password[0] == '\0' || hostname[0] == '\0') {
+  if(userId[0] == 0 || password[0] == 0 || hostname[0] == 0) {
     // User did not provide a mandatory parameter.
     clearAndRestart();
   }

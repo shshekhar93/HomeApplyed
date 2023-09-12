@@ -1,4 +1,5 @@
 #include "mappers.h"
+#include "MD5Builder.h"
 
 
 HomeApplyed::ConfigItem HomeApplyed::toConfigItem(uint8_t leadId) {
@@ -43,4 +44,12 @@ uint8_t HomeApplyed::toNumber(char hexDigit) {
     return hexDigit - 'A' + 10;
   }
   return 0;
+}
+
+String HomeApplyed::md5(const char* str) {
+  MD5Builder md5Builder;
+  md5Builder.begin();
+  md5Builder.add(str);
+  md5Builder.calculate();
+  return md5Builder.toString();
 }

@@ -41,15 +41,17 @@ uint32_t HomeApplyed::decodeHex(String hexStr, uint8_t output[], uint32_t maxLen
 }
 
 String HomeApplyed::encodeHex(const uint8_t* bytes, uint8_t len) {
-  char hex[len * 2 + 1];
-  hex[len * 2] = '\0';
+  char* hex = new char[len * 2 + 1];
+  hex[len * 2] = 0;
   for(uint32_t i = 0; i < len; i++) {
     uint32_t hexIdx = i * 2;
     hex[hexIdx] = toHexDigit(bytes[i] >> 4);
     hex[hexIdx + 1] = toHexDigit(bytes[i]);
   }
 
-  return (String)hex;
+  String result = hex;
+  delete hex;
+  return result;
 }
 
 String HomeApplyed::encrypt(String plainText, uint8_t key[]) {
@@ -61,15 +63,19 @@ String HomeApplyed::encrypt(String plainText, uint8_t key[]) {
   cipher.setKey(key, KEY_SIZE);
 
   uint32_t len = plainText.length();
-  uint8_t paddingLen = KEY_SIZE - (len % KEY_SIZE);
-  char padding[paddingLen];
+  uint8_t paddingLen = (KEY_SIZE - (len % KEY_SIZE)) % KEY_SIZE;
+  char padding[16];
   memset(padding, ' ', paddingLen);
+  padding[paddingLen] = 0;
   plainText = plainText + padding;
   len += paddingLen;
 
-  uint8_t output[len];
+  uint8_t* output = new uint8_t[len];
   cipher.encrypt(output, (uint8_t*)plainText.c_str(), len);
-  return encodeHex(iv, KEY_SIZE) + '-' + encodeHex(output, len);
+  String result = encodeHex(iv, KEY_SIZE) + '-' + encodeHex(output, len);
+
+  delete output;
+  return result;
 }
 
 /**
@@ -85,7 +91,7 @@ String HomeApplyed::decrypt(String input, uint8_t key[]) {
 
   // Extract the cipher text
   uint32_t cipherLen = input.length() - ENCODED_KEY_SIZE - 1;
-  uint8_t cipherText[cipherLen + 1];
+  uint8_t* cipherText = new uint8_t[cipherLen + 1];
   memcpy(cipherText, input.c_str() + ENCODED_KEY_SIZE + 1, cipherLen);
   cipherText[cipherLen] = 0;
   cipherLen = decodeHex((char*)cipherText, cipherText, cipherLen);
@@ -95,8 +101,12 @@ String HomeApplyed::decrypt(String input, uint8_t key[]) {
   cipher.setIV(iv, KEY_SIZE);
   cipher.setKey(key, KEY_SIZE);
 
-  char plainText[cipherLen + 1];
+  char* plainText = new char[cipherLen + 1];
   cipher.decrypt((uint8_t*)plainText, cipherText, cipherLen);
   plainText[cipherLen] = 0;
-  return plainText;
+  String result = plainText;
+
+  delete plainText;
+  delete cipherText;
+  return result;
 }

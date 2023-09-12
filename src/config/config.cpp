@@ -269,7 +269,7 @@ bool HomeApplyed::Config::save() {
     DynamicJsonDocument stateDoc(1024);
     JsonObject stateObj = stateDoc.to<JsonObject>();
     for(uint8_t i = 0; i < 4; i++) {
-      stateObj[(String)LEAD_PREFIX + i] = leadState[i];
+      stateObj[String(LEAD_PREFIX) + i] = leadState[i];
     }
 
     File stateFile = LittleFS.open(STATE_FILE, WRITE_MODE);

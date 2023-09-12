@@ -32,8 +32,8 @@ namespace HomeApplyed {
   extern String ChipID;
   const uint16_t WS_PORT = 80;
   const char WS_PATH[] = "/v1/ws";
-  const char WS_PROTOCOL[] = "myhomenew-device";
-  const char DEVICE_ID_PREFIX[] = "myhomenew-";
+  const char WS_PROTOCOL[] = "homeapplyed-device";
+  const char DEVICE_ID_PREFIX[] = "homeapplyed-";
   const char KEY_SEPARATOR[] = "|";
   const char AUTHORIZATION_HEADER[] = "Authorization";
   const uint32_t WS_RECONNECT_INTERVAL = 5000;

@@ -21,7 +21,10 @@ namespace HomeApplyed {
   const char READ_MODE[2] = "r";
   const char WRITE_MODE[2] = "w";
   const char LEAD_PREFIX[] = "lead";
+  const char DEFAULT_HOST_ADDRESS[] = "home.applyed.in";
   const int BaudRate = 115200;
+  const int RESTART_DELAY = 2500;
+  const int LOOP_DELAY = 100;
   extern String FailureResponse;
   extern String SuccessResponse;
 
@@ -61,6 +64,12 @@ namespace HomeApplyed {
   const char MountFailure[] PROGMEM = "fs_fail";
   const char FileOpenFail[] PROGMEM = "fo_fail";
   const char FileParseFail[] PROGMEM = "fp_fail";
+
+#ifdef ESP8266
+  const __FlashStringHelper* FStr(const char*);
+#else
+  const char* FStr(const char*);
+#endif
 }
 
 #endif

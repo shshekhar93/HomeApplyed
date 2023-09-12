@@ -24,8 +24,8 @@ String addFrameNumToJSON(String resp, int frameNum) {
 
 HomeApplyed::WSClient::WSClient()
   : client(NULL)
-  , active(false)
   , disconnected(false)
+  , active(false)
   , response("")
   , frameCount(0) {}
 
@@ -76,6 +76,7 @@ void HomeApplyed::WSClient::onWSEvent(WebsocketsEvent event, String data) {
         // We have not been able to connect for last 5 mins.
         // Simply restart.
         if((millis() - disconnectTs) > 300000ul) {
+          Serial.println("SRVR_CNCT_FAIL");
           ESP.restart();
         }
       }
@@ -213,27 +214,36 @@ void HomeApplyed::WSClient::sendEncrypted(const String& resp) {
 
 void HomeApplyed::WSClient::connect() {
   initialize();
-  Config* config = Config::getInstance();
+  const char* host = Config::getInstance()->getStrValue(HOSTNAME);
+  if(host[0] == 0) {
+    host = DEFAULT_HOST_ADDRESS;
+  }
+  
   client->onEvent(onWSEvent);
   client->onMessage(handleMessage);
-  client->connect(config->getStrValue(HOSTNAME), WS_PORT, WS_PATH);
+  client->connect(host, WS_PORT, WS_PATH);
 }
 
 void HomeApplyed::WSClient::loop() {
   if(disconnected) {
     disconnected = false;
     connect();
+    return;
   }
 
   if(response != "") {
     Serial.println("REL_SND");
+    yield();
     sendEncrypted();
+    return;
   }
 
   if(shouldSaveConfig) {
     Serial.println("CNF_SAV");
+    yield();
     Config::getInstance()->save();
     shouldSaveConfig = false;
+    return;
   }
 
   if(client->available()) {

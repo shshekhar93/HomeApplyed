@@ -64,7 +64,7 @@ bool HomeApplyed::Config::initialize() {
   }
 
   for(uint8_t i = 0; i < ENABLED_LEADS_COUNT; i++) {
-    String leadKey = (String)LEAD_PREFIX + i;
+    String leadKey = String(LEAD_PREFIX) + i;
     this->leadState[i] = doc.containsKey(leadKey) ? doc[leadKey] : 0;
   }
   // End of state file loading
@@ -92,22 +92,30 @@ bool HomeApplyed::Config::initialize() {
     return false;
   }
 
-  if(doc.containsKey(AccessPointMac))
-    strcpy(accessPointMac, doc[AccessPointMac]);
-  if(doc.containsKey(AccessPointPassword))
-    strcpy(accessPointPassword, doc[AccessPointPassword]);
-  if(doc.containsKey(StationMac))
-    strcpy(stationMac, doc[StationMac]);
-  if(doc.containsKey(UserId))
-    strcpy(userId, doc[UserId]);
-  if(doc.containsKey(EncryptionKey))
-    strcpy(encryptionKey, doc[EncryptionKey]);
-  if(doc.containsKey(Hostname))
-    strcpy(hostname, doc[Hostname]);
-  if(doc.containsKey(DeviceType))
-    strcpy(deviceType, doc[DeviceType]);
-  if(doc.containsKey(ActiveState))
-    activeStateLow = doc[ActiveState] == "low";
+  if(doc.containsKey(FStr(AccessPointMac))) {
+    strcpy(accessPointMac, doc[FStr(AccessPointMac)]);
+  }
+  if(doc.containsKey(FStr(AccessPointPassword))) {
+    strcpy(accessPointPassword, doc[FStr(AccessPointPassword)]);
+  }
+  if(doc.containsKey(FStr(StationMac))) {
+    strcpy(stationMac, doc[FStr(StationMac)]);
+  }
+  if(doc.containsKey(FStr(UserId))) {
+    strcpy(userId, doc[FStr(UserId)]);
+  }
+  if(doc.containsKey(FStr(EncryptionKey))) {
+    strcpy(encryptionKey, doc[FStr(EncryptionKey)]);
+  }
+  if(doc.containsKey(FStr(Hostname))) {
+    strcpy(hostname, doc[FStr(Hostname)]);
+  }
+  if(doc.containsKey(FStr(DeviceType))) {
+    strcpy(deviceType, doc[FStr(DeviceType)]);
+  }
+  if(doc.containsKey(FStr(ActiveState))) {
+    activeStateLow = doc[FStr(ActiveState)] == "low";
+  }
   // End of loading settings file.
 
   return true;
@@ -277,14 +285,14 @@ bool HomeApplyed::Config::save() {
     DynamicJsonDocument settingsDoc(1024);
     JsonObject settingsObj = settingsDoc.to<JsonObject>();
 
-    settingsObj[AccessPointMac] = accessPointMac;
-    settingsObj[AccessPointPassword] = accessPointPassword;
-    settingsObj[StationMac] = stationMac;
-    settingsObj[UserId] = userId;
-    settingsObj[EncryptionKey] = encryptionKey;
-    settingsObj[Hostname] = hostname;
-    settingsObj[DeviceType] = deviceType;
-    settingsObj[ActiveState] = activeStateLow ? "low": "high";
+    settingsObj[FStr(AccessPointMac)] = accessPointMac;
+    settingsObj[FStr(AccessPointPassword)] = accessPointPassword;
+    settingsObj[FStr(StationMac)] = stationMac;
+    settingsObj[FStr(UserId)] = userId;
+    settingsObj[FStr(EncryptionKey)] = encryptionKey;
+    settingsObj[FStr(Hostname)] = hostname;
+    settingsObj[FStr(DeviceType)] = deviceType;
+    settingsObj[FStr(ActiveState)] = activeStateLow ? "low": "high";
 
     File settingsFile = LittleFS.open(SETTINGS_FILE, WRITE_MODE);
     if(settingsFile) {
@@ -296,7 +304,7 @@ bool HomeApplyed::Config::save() {
 
     File backupFile = LittleFS.open(BACKUP_FILE, WRITE_MODE);
     if(backupFile) {
-       serializeJson(settingsDoc, backupFile);
+      serializeJson(settingsDoc, backupFile);
       backupFile.close();
     }
     else

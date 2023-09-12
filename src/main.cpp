@@ -1,9 +1,3 @@
-/**
- * Blink
- *
- * Turns on an LED on for one second,
- * then off for one second, repeatedly.
- */
 #include "Arduino.h"
 #include "LittleFS.h"
 
@@ -26,7 +20,7 @@ void setup()
   bool configInitSuccess = config->initialize();
   if(!configInitSuccess) {
     Serial.println("CONF_INIT_FAIL");
-    delay(2500);
+    delay(HomeApplyed::RESTART_DELAY);
     ESP.restart();
   }
 
@@ -35,7 +29,7 @@ void setup()
   bool actionsInitSuccess = actions->initialize();
   if(!actionsInitSuccess) {
     Serial.println("ACT_INIT_FAIL");
-    delay(2500);
+    delay(HomeApplyed::RESTART_DELAY);
     ESP.restart();
   }
 
@@ -43,7 +37,7 @@ void setup()
   bool wifiInitSuccess = wifiController->initialize();
   if(!wifiInitSuccess) {
     Serial.println("WIFI_INIT_FAIL");
-    delay(2500);
+    delay(HomeApplyed::RESTART_DELAY);
     ESP.restart();
   }
 
@@ -55,4 +49,5 @@ void loop()
 {
   wifiController->loop();
   wsClient->loop();
+  delay(HomeApplyed::LOOP_DELAY);
 }

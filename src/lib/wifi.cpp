@@ -13,6 +13,7 @@
 #endif
 
 HomeApplyed::WifiController* HomeApplyed::WifiController::_instance = NULL;
+WiFiManager wifiManager;
 
 HomeApplyed::WifiController::WifiController()
   :buttonPressStart(0) {}
@@ -25,14 +26,14 @@ HomeApplyed::WifiController* HomeApplyed::WifiController::getInstance() {
 }
 
 void HomeApplyed::WifiController::clearAndRestart() {
-  WiFi.disconnect(true);
-  delay(1000);
+  Serial.println("CLR_N_RESRT");
+  wifiManager.resetSettings();
+  delay(RESTART_DELAY);
   ESP.restart();
 }
 
 bool HomeApplyed::WifiController::initialize() {
-  pinMode(D8, INPUT_PULLUP);
-
+  pinMode(D8, INPUT);
   const char* APMacStr = Config::getInstance()->getStrValue(ACCESS_POINT_MAC);
   const char* STMacStr = Config::getInstance()->getStrValue(STATION_MAC);
 
@@ -68,7 +69,6 @@ bool HomeApplyed::WifiController::initialize() {
   #endif
   yield();
 
-  delay(10000);
   Serial.print("AP MAC: "); Serial.println(WiFi.softAPmacAddress());
   Serial.print("STA MAC: "); Serial.println(WiFi.macAddress());
 
@@ -82,6 +82,8 @@ bool HomeApplyed::WifiController::initialize() {
     if(WiFi.waitForConnectResult() != WL_CONNECTED) {
       setupAccessPoint(hostname);
     }
+    Serial.print("IP: ");
+    Serial.println(WiFi.localIP());
   }
   else {
     setupAccessPoint(hostname);
@@ -90,7 +92,6 @@ bool HomeApplyed::WifiController::initialize() {
 }
 
 void HomeApplyed::WifiController::setupAccessPoint(const String& ssid) {
-  WiFiManager wifiManager;
   #ifdef ESP8266
     wifiManager.setTitle("Home Applyed");
   #else
@@ -119,6 +120,7 @@ transform=\"scale(-1,1) translate(-500,0)\"/>\
   Serial.println(apPassword);
   wifiManager.autoConnect(ssid.c_str(), apPassword);
   if(WiFi.status() != WL_CONNECTED) {
+    Serial.println("WIFI_CNCT_FAIL");
     ESP.restart();
   }
 
@@ -152,7 +154,7 @@ transform=\"scale(-1,1) translate(-500,0)\"/>\
 }
 
 void HomeApplyed::WifiController::loop() {
-  if(digitalRead(D8) == 0) {
+  if(digitalRead(D8) == 1) {
     if(buttonPressStart == 0) {
       buttonPressStart = millis();
     }

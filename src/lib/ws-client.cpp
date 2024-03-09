@@ -221,7 +221,7 @@ void HomeApplyed::WSClient::loop() {
   if(disconnected) {
     // We have not been able to connect for last 2.5 minute.
     // Simply restart.
-    if((millis() - disconnectTs) > 60000ul) {
+    if((millis() - disconnectTs) > 150000ul) {
       logE(LogServerConnectFailed);
       ESP.restart();
     }

@@ -3,6 +3,7 @@
 #include "config/config.h"
 #include "common/crypto.h"
 #include "common/mappers.h"
+#include "common/logger.h"
 #include "lib/actions.h"
 #include "lib/updates.h"
 #include "ArduinoJson.h"
@@ -61,24 +62,15 @@ void HomeApplyed::WSClient::onWSEvent(WebsocketsEvent event, String data) {
   switch (event)
   {
     case WebsocketsEvent::ConnectionOpened:
-      Serial.println("WSC_CON");
+      logE(LogWebSocketConnected);
       disconnectTs = 0;
       break;
     case WebsocketsEvent::ConnectionClosed:
-      Serial.println("WSC_DIS");
+      logE(LogWebSocketDisconnected);
       _instance->disconnected = true;
-      delay(WS_RECONNECT_INTERVAL);
 
       if(disconnectTs == 0){
         disconnectTs = millis();
-      }
-      else {
-        // We have not been able to connect for last 5 mins.
-        // Simply restart.
-        if((millis() - disconnectTs) > 300000ul) {
-          Serial.println("SRVR_CNCT_FAIL");
-          ESP.restart();
-        }
       }
     default:
       return;
@@ -116,10 +108,10 @@ void HomeApplyed::WSClient::handleMessage(WebsocketsMessage msg) {
   String failureWithFrameNum = addFrameNumToJSON(FailureResponse, frameNum);
 
   if(action == ACTION_CONFIRM_SESSION) {
-    Serial.println("CNF_KEY");
+    logE(LogWebSocketKeyConfirm);
     String storedSessKey = encodeHex(_instance->sessionKey, 16);
     if(storedSessKey == data) {
-      Serial.println("CNF_KEY_SCS");
+      logE(LogWebSocketKeyConfirmSuccess);
       _instance->active = true;
       _instance->sendEncrypted(sucessWithFrameNum);
     }
@@ -131,13 +123,13 @@ void HomeApplyed::WSClient::handleMessage(WebsocketsMessage msg) {
 
   // The server hasn't proven itself yet. don't process anything else.
   if(!_instance->active) {
-    Serial.println("CONN_NO_ACTIVE");
+    logE(LogWebSocketConnectionInactive);
     return _instance->sendEncrypted(failureWithFrameNum);
   }
 
   // Update the key!
   if(action == ACTION_UPDATE_KEY) {
-    Serial.println(F("SET_KEY"));
+    logE(LogWebSocketSetKey);
     config->setStrValue(ENCRYPTION_KEY, data.c_str());
     _instance->shouldSaveConfig = true;
     _instance->sendEncrypted(sucessWithFrameNum);
@@ -146,7 +138,7 @@ void HomeApplyed::WSClient::handleMessage(WebsocketsMessage msg) {
 
   // Update the username!
   if(action == ACTION_UPDATE_USERNAME) {
-    Serial.println(F("SET_USR"));
+    logE(LogWebSocketSetUser);
     config->setStrValue(USER_ID, data.c_str());
     _instance->shouldSaveConfig = true;
     _instance->sendEncrypted(sucessWithFrameNum);
@@ -155,7 +147,7 @@ void HomeApplyed::WSClient::handleMessage(WebsocketsMessage msg) {
 
   // Set state
   if(action == ACTION_SET_STATE) {
-    Serial.println(F("SET_STE"));
+    logE(LogWebSocketSetState);
     uint8_t eqIdx = data.indexOf('=');
     uint8_t devId = data.substring(0, eqIdx).toInt();
     uint8_t brightness = data.substring(eqIdx + 1).toInt();
@@ -167,7 +159,7 @@ void HomeApplyed::WSClient::handleMessage(WebsocketsMessage msg) {
 
   // Get state
   if(action == ACTION_GET_STATE) {
-    Serial.println("GET_STE");
+    logE(LogWebSocketGetState);
     String state = SuccessResponse.substring(0, SuccessResponse.length() - 1) + 
       String(",\"frame-num\":") + String(frameNum) +
       String(",\"type\":\"") + config->getStrValue(DEVICE_TYPE) + "\"" +
@@ -182,20 +174,20 @@ void HomeApplyed::WSClient::handleMessage(WebsocketsMessage msg) {
 
   // Update Firmware
   if(action == ACTION_UPDATE_FIRMWARE) {
-    Serial.println("UPDT_REQ");
+    logE(LogWebSocketUpdateReq);
     Updates::update(data.c_str());
   }
 
   // Update FS
   if(action == ACTION_UPDATE_FS) {
-    Serial.println("FS_UPDT_REQ");
+    logE(LogWebSocketFSUpdateReq);
     Updates::updateFS(data.c_str());
   }
 }
 
 void HomeApplyed::WSClient::sendEncrypted() {
   if(response == "") {
-    Serial.println("BUF_EMY");
+    logE(LogWebSocketBufEmpty);
     return;
   }
 
@@ -206,13 +198,13 @@ void HomeApplyed::WSClient::sendEncrypted() {
 
 void HomeApplyed::WSClient::sendEncrypted(const String& resp) {
   if(response != "") { // first clear old buffer
-    Serial.println("OLD_SND");
+    logE(LogWebSocketOldSend);
     sendEncrypted();
   }
   response = resp;
 }
 
-void HomeApplyed::WSClient::connect() {
+bool HomeApplyed::WSClient::connect() {
   initialize();
   const char* host = Config::getInstance()->getStrValue(HOSTNAME);
   if(host[0] == 0) {
@@ -221,25 +213,33 @@ void HomeApplyed::WSClient::connect() {
   
   client->onEvent(onWSEvent);
   client->onMessage(handleMessage);
-  client->connect(host, WS_PORT, WS_PATH);
+  Serial.printf("Will connect to %s\n", host);
+  return client->connect(host, WS_PORT, WS_PATH);
 }
 
 void HomeApplyed::WSClient::loop() {
   if(disconnected) {
-    disconnected = false;
-    connect();
+    // We have not been able to connect for last 2.5 minute.
+    // Simply restart.
+    if((millis() - disconnectTs) > 60000ul) {
+      logE(LogServerConnectFailed);
+      ESP.restart();
+    }
+
+    delay(HomeApplyed::RESTART_DELAY);
+    disconnected = !connect();
     return;
   }
 
   if(response != "") {
-    Serial.println("REL_SND");
+    logE(LogWebSocketFlush);
     yield();
     sendEncrypted();
     return;
   }
 
   if(shouldSaveConfig) {
-    Serial.println("CNF_SAV");
+    logE(LogWebSocketConfigSave);
     yield();
     Config::getInstance()->save();
     shouldSaveConfig = false;

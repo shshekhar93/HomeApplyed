@@ -1,5 +1,6 @@
 #include "updates.h"
 #include "common/constants.h"
+#include "common/logger.h"
 #include "config/config.h"
 #include "WiFiClient.h"
 #include "Arduino.h"
@@ -20,18 +21,18 @@ void HomeApplyed::Updates::handleUpdateResult(HTTPUpdateResult updateResp) {
   switch (updateResp)
   {
     case HTTP_UPDATE_OK:
-      Serial.println("UPDATE_INSTALLED");
+      logE(LogUpdateInstalled);
       ESP.restart();
       break;
     case HTTP_UPDATE_NO_UPDATES:
-      Serial.println("NO_UPDATE_AVLBL");
+      logE(LogNoUpdateAvailable);
       break;
     case HTTP_UPDATE_FAILED:
-      Serial.println(F("UPDATE_FAILED"));
+      logE(LogUpdateFailed);
       Serial.println(httpUpdate.getLastErrorString());
       break;
     default:
-      Serial.println(F("UNSUP_RET_CODE"));
+      logE(LogUnsupportedReturnCode);
       break;
   }
 }

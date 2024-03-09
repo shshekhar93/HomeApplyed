@@ -60,6 +60,8 @@ namespace HomeApplyed {
   const char ActiveState[] PROGMEM = "active_state";
 
   // Logging messages
+  const char LOG_ENUM_PREFIX[] PROGMEM = "L_";
+
   const char MountSuccess[] PROGMEM = "fs_sucs";
   const char MountFailure[] PROGMEM = "fs_fail";
   const char FileOpenFail[] PROGMEM = "fo_fail";

@@ -1,5 +1,6 @@
 #include "config.h"
 #include "common/constants.h"
+#include "common/logger.h"
 #include "LittleFS.h"
 #include "ArduinoJson.h"
 
@@ -42,23 +43,23 @@ bool HomeApplyed::Config::isValidConfigItem(HomeApplyed::ConfigItem key) {
 
 bool HomeApplyed::Config::initialize() {
   if(!LittleFS.begin()) {
-    Serial.println(MountFailure);
+    logE(LogMountFailure);
     return false;
   }
-  Serial.println(MountSuccess);
+  logE(LogMountSuccess);
 
   DynamicJsonDocument doc(1024);
   // Load state file
   File stateFile = LittleFS.open(STATE_FILE, READ_MODE);
   if(!stateFile) {
-    Serial.println(FileOpenFail);
+    logE(LogFileOpenFail);
     Serial.println(STATE_FILE);
     return false;
   }
 
   auto err = deserializeJson(doc, stateFile);
   if(err) {
-    Serial.println(FileParseFail);
+    logE(LogFileParseFail);
     Serial.println(STATE_FILE);
     return false;
   }
@@ -72,13 +73,13 @@ bool HomeApplyed::Config::initialize() {
   // Load settings file
   File settingsFile = LittleFS.open(SETTINGS_FILE, READ_MODE);
   if(!settingsFile) {
-    Serial.println(FileOpenFail);
+    logE(LogFileOpenFail);
     Serial.println(SETTINGS_FILE);
 
     settingsFile = LittleFS.open(BACKUP_FILE, READ_MODE);
 
     if(!settingsFile) {
-      Serial.println(FileOpenFail);
+      logE(LogFileOpenFail);
       Serial.println(BACKUP_FILE);
 
       return false;
@@ -87,7 +88,7 @@ bool HomeApplyed::Config::initialize() {
 
   err = deserializeJson(doc, settingsFile);
   if(err) {
-    Serial.println(FileParseFail);
+    logE(LogFileParseFail);
     Serial.println(SETTINGS_FILE);
     return false;
   }

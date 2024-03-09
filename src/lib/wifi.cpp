@@ -4,6 +4,7 @@
 #include "common/crypto.h"
 #include "common/constants.h"
 #include "common/mappers.h"
+#include "common/logger.h"
 #include "WiFiManager.h"
 
 #ifdef ESP8266
@@ -27,7 +28,7 @@ HomeApplyed::WifiController* HomeApplyed::WifiController::getInstance() {
 }
 
 void HomeApplyed::WifiController::clearAndRestart() {
-  Serial.println("CLR_N_RESRT");
+  logE(LogFactoryReset);
   wifiManager.resetSettings();
   delay(RESTART_DELAY);
   ESP.restart();
@@ -47,24 +48,24 @@ bool HomeApplyed::WifiController::initialize() {
   yield();
   #ifdef ESP8266
   if(!wifi_set_macaddr(SOFTAP_IF, APMac)) {
-    Serial.println("SET_AP_MAC_FAIL");
+    logE(LogSetAPMacFail);
     return false;
   }
   #else
   if(esp_wifi_set_mac(WIFI_IF_AP, APMac) != ESP_OK) {
-    Serial.println("SET_AP_MAC_FAIL");
+    logE(LogSetAPMacFail);
     return false;
   } 
   #endif
   yield();
   #ifdef ESP8266
   if(!wifi_set_macaddr(STATION_IF, STAMac)) {
-    Serial.println("SET_STA_MAC_FAIL");
+    logE(LogSetSTAMacFail);
     return false;
   }
   #else
   if(esp_wifi_set_mac(WIFI_IF_STA, STAMac) != ESP_OK) {
-    Serial.println("SET_STA_MAC_FAIL");
+    logE(LogSetSTAMacFail);
     return false;
   }
   #endif
@@ -75,6 +76,7 @@ bool HomeApplyed::WifiController::initialize() {
 
   String hostname = DEVICE_ID_PREFIX + ChipID;
   WiFi.hostname(hostname);
+  Serial.printf("Hostname is %s\n", hostname);
 
   WiFi.mode(WIFI_STA);
   if(WiFi.SSID() != "") {
@@ -121,7 +123,7 @@ transform=\"scale(-1,1) translate(-500,0)\"/>\
   Serial.println(apPassword);
   wifiManager.autoConnect(ssid.c_str(), apPassword);
   if(WiFi.status() != WL_CONNECTED) {
-    Serial.println("WIFI_CNCT_FAIL");
+    logE(LogWiFiConnectFail);
     ESP.restart();
   }
 
@@ -162,7 +164,8 @@ transform=\"scale(-1,1) translate(-500,0)\"/>\
 }
 
 void HomeApplyed::WifiController::loop() {
-  if(digitalRead(D8) == 1) {
+  auto value = digitalRead(D8);
+  if(value == HIGH) {
     if(buttonPressStart == 0) {
       buttonPressStart = millis();
     }

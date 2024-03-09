@@ -27,7 +27,7 @@ namespace HomeApplyed {
     
     public: 
       static WSClient* getInstance();
-      void connect();
+      bool connect();
       void loop();
   };
 }

@@ -2,6 +2,7 @@
 #include "LittleFS.h"
 
 #include "common/constants.h"
+#include "common/logger.h"
 #include "config/config.h"
 #include "lib/actions.h"
 #include "lib/wifi.h"
@@ -19,7 +20,7 @@ void setup()
   HomeApplyed::Config* config = HomeApplyed::Config::getInstance();
   bool configInitSuccess = config->initialize();
   if(!configInitSuccess) {
-    Serial.println("CONF_INIT_FAIL");
+    HomeApplyed::logE(HomeApplyed::LogConfigInitFail);
     delay(HomeApplyed::RESTART_DELAY);
     ESP.restart();
   }
@@ -28,7 +29,7 @@ void setup()
   HomeApplyed::Actions* actions = HomeApplyed::Actions::getInstance();
   bool actionsInitSuccess = actions->initialize();
   if(!actionsInitSuccess) {
-    Serial.println("ACT_INIT_FAIL");
+    HomeApplyed::logE(HomeApplyed::LogActionsInitFail);
     delay(HomeApplyed::RESTART_DELAY);
     ESP.restart();
   }
@@ -36,13 +37,18 @@ void setup()
   // Setup Wifi
   bool wifiInitSuccess = wifiController->initialize();
   if(!wifiInitSuccess) {
-    Serial.println("WIFI_INIT_FAIL");
+    HomeApplyed::logE(HomeApplyed::LogWifiInitFail);
     delay(HomeApplyed::RESTART_DELAY);
     ESP.restart();
   }
 
   // Setup Web Socket Client
-  wsClient->connect();
+  bool wsConnectSuccess = wsClient->connect();
+  if(!wsConnectSuccess) {
+    HomeApplyed::logE(HomeApplyed::LogWebSocketConnectFail);
+    delay(HomeApplyed::RESTART_DELAY);
+    ESP.restart();
+  }
 }
 
 void loop()

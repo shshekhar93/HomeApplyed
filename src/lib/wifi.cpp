@@ -74,9 +74,9 @@ bool HomeApplyed::WifiController::initialize() {
   Serial.print("AP MAC: "); Serial.println(WiFi.softAPmacAddress());
   Serial.print("STA MAC: "); Serial.println(WiFi.macAddress());
 
-  String hostname = DEVICE_ID_PREFIX + ChipID;
+  String hostname = String(DEVICE_ID_PREFIX) + ChipID;
   WiFi.hostname(hostname);
-  Serial.printf("Hostname is %s\n", hostname);
+  Serial.printf("Hostname is %s\n", hostname.c_str());
 
   WiFi.mode(WIFI_STA);
   if(WiFi.SSID() != "") {
@@ -164,8 +164,7 @@ transform=\"scale(-1,1) translate(-500,0)\"/>\
 }
 
 void HomeApplyed::WifiController::loop() {
-  auto value = digitalRead(D8);
-  if(value == HIGH) {
+  if(digitalRead(D8) == HIGH) {
     if(buttonPressStart == 0) {
       buttonPressStart = millis();
     }

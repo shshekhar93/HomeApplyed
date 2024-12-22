@@ -2,12 +2,12 @@
 #include "common/constants.h"
 #include "common/logger.h"
 #include "LittleFS.h"
-#include "ArduinoJson.h"
 
 HomeApplyed::Config* HomeApplyed::Config::_instance = NULL;
 
 HomeApplyed::Config::Config() {
   syncPendingItems = 0;
+  jsonDoc = new DynamicJsonDocument(1024);
 
   strcpy(deviceType, EMPTY_STR);
   strcpy(accessPointMac, EMPTY_STR);
@@ -41,57 +41,54 @@ bool HomeApplyed::Config::isValidConfigItem(HomeApplyed::ConfigItem key) {
   return key < MAX_LEAD_KEY;
 }
 
-bool HomeApplyed::Config::initialize() {
-  if(!LittleFS.begin()) {
-    logE(LogMountFailure);
-    return false;
-  }
-  logE(LogMountSuccess);
-
-  DynamicJsonDocument doc(1024);
-  // Load state file
-  File stateFile = LittleFS.open(STATE_FILE, READ_MODE);
-  if(!stateFile) {
+bool HomeApplyed::Config::loadJSONFile(const char* filename) {
+  File jsonFile = LittleFS.open(filename, READ_MODE);
+  if(!jsonFile) {
     logE(LogFileOpenFail);
-    Serial.println(STATE_FILE);
+    Serial.println(filename);
     return false;
   }
 
-  auto err = deserializeJson(doc, stateFile);
+  DynamicJsonDocument &doc = *this->jsonDoc;
+
+  doc.clear();
+  auto err = deserializeJson(doc, jsonFile);
   if(err) {
     logE(LogFileParseFail);
-    Serial.println(STATE_FILE);
+    Serial.println(filename);
     return false;
   }
+  
+  jsonFile.close();
+  return true;
+}
+
+bool HomeApplyed::Config::loadState() {
+  auto jsonLoaded = loadJSONFile(STATE_FILE);
+  if(!jsonLoaded) {
+    return false;
+  }
+
+  DynamicJsonDocument &doc = *this->jsonDoc;
 
   for(uint8_t i = 0; i < ENABLED_LEADS_COUNT; i++) {
     String leadKey = String(LEAD_PREFIX) + i;
     this->leadState[i] = doc.containsKey(leadKey) ? doc[leadKey] : 0;
   }
-  // End of state file loading
+  return true;
+}
 
-  // Load settings file
-  File settingsFile = LittleFS.open(SETTINGS_FILE, READ_MODE);
-  if(!settingsFile) {
-    logE(LogFileOpenFail);
-    Serial.println(SETTINGS_FILE);
+bool HomeApplyed::Config::loadSettings() {
+  auto jsonLoaded = loadJSONFile(SETTINGS_FILE);
+  if(!jsonLoaded) {
+    jsonLoaded = loadJSONFile(BACKUP_FILE);
 
-    settingsFile = LittleFS.open(BACKUP_FILE, READ_MODE);
-
-    if(!settingsFile) {
-      logE(LogFileOpenFail);
-      Serial.println(BACKUP_FILE);
-
+    if(!jsonLoaded) {
       return false;
     }
   }
 
-  err = deserializeJson(doc, settingsFile);
-  if(err) {
-    logE(LogFileParseFail);
-    Serial.println(SETTINGS_FILE);
-    return false;
-  }
+  DynamicJsonDocument &doc = *this->jsonDoc;
 
   if(doc.containsKey(FStr(AccessPointMac))) {
     strcpy(accessPointMac, doc[FStr(AccessPointMac)]);
@@ -117,9 +114,17 @@ bool HomeApplyed::Config::initialize() {
   if(doc.containsKey(FStr(ActiveState))) {
     activeStateLow = doc[FStr(ActiveState)] == "low";
   }
-  // End of loading settings file.
-
   return true;
+}
+
+bool HomeApplyed::Config::initialize() {
+  if(!LittleFS.begin()) {
+    logE(LogMountFailure);
+    return false;
+  }
+  logE(LogMountSuccess);
+
+  return loadSettings() && loadState();
 }
 
 const char* HomeApplyed::Config::getStrValue(HomeApplyed::ConfigItem key) {
@@ -267,7 +272,8 @@ bool HomeApplyed::Config::save() {
   bool result = true;
 
   if(syncPendingItems & LEAD_CONFIG_KEYS) {
-    DynamicJsonDocument stateDoc(1024);
+    DynamicJsonDocument &stateDoc = *this->jsonDoc;
+    stateDoc.clear();
     JsonObject stateObj = stateDoc.to<JsonObject>();
     for(uint8_t i = 0; i < 4; i++) {
       stateObj[String(LEAD_PREFIX) + i] = leadState[i];
@@ -283,7 +289,8 @@ bool HomeApplyed::Config::save() {
   }
 
   if(syncPendingItems & SETTINGS_CONFIG_KEYS) {
-    DynamicJsonDocument settingsDoc(1024);
+    DynamicJsonDocument &settingsDoc = *this->jsonDoc;
+    settingsDoc.clear();
     JsonObject settingsObj = settingsDoc.to<JsonObject>();
 
     settingsObj[FStr(AccessPointMac)] = accessPointMac;

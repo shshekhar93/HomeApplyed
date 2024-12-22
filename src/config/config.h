@@ -4,6 +4,7 @@
 #include "stddef.h"
 #include "stdint.h"
 #include "common/constants.h"
+#include "ArduinoJson.h"
 
 namespace HomeApplyed {
   enum ConfigItem {
@@ -36,6 +37,7 @@ namespace HomeApplyed {
       Config();
 
       uint32_t syncPendingItems = 0;
+      DynamicJsonDocument* jsonDoc;
 
       char deviceType[17];
       char accessPointMac[13];
@@ -48,6 +50,9 @@ namespace HomeApplyed {
       uint8_t leadState[ENABLED_LEADS_COUNT];
 
       bool isValidConfigItem(ConfigItem key);
+      bool loadJSONFile(const char* filename);
+      bool loadState();
+      bool loadSettings();
 
     public: 
       static Config* getInstance();

@@ -16,6 +16,9 @@ void setup()
   // Setup Serial Console
   Serial.begin(HomeApplyed::BaudRate);
 
+  // debugging delay
+  delay(HomeApplyed::RESTART_DELAY);
+
   // Setup config
   HomeApplyed::Config* config = HomeApplyed::Config::getInstance();
   bool configInitSuccess = config->initialize();

@@ -9,8 +9,6 @@
 #define ENABLED_LEADS_COUNT   4
 #define KEY_SIZE              16
 #define ENCODED_KEY_SIZE      32
-#define SOFTWARE_VERSION      "2.0.0"
-#define HARDWARE_MODEL        "ESP32S3"
 
 namespace HomeApplyed {
   // Magic constants
